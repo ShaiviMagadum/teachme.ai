@@ -3,64 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>teachme.ai - Learn by Teaching</title>
+    <title>teachme.ai — Master Any Subject by Teaching</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <header>
-        <a href="#"><span>✦</span> teachme<span>.ai</span></a>
-        <div class="stats">
-            <div class="stat-badge"><span>⚡</span><b id="xp-display">0</b><span>XP</span></div>
-            <div class="stat-badge"><span>🔥</span><b id="streak-display">1</b><span>day streak</span></div>
+        <a href="#" class="logo">
+            <span class="logo-icon">✦</span> 
+            teachme<span class="highlight">.ai</span>
+        </a>
+        <div class="header-right">
+            <div class="stats">
+                <div class="stat-badge"><span>⚡</span><b id="xp-display">0</b><span>XP</span></div>
+                <div class="stat-badge"><span>🔥</span><b id="streak-display">1</b><span>day streak</span></div>
+            </div>
+            <button class="btn btn-icon" onclick="openSettingsModal()" title="API Settings">⚙️</button>
         </div>
     </header>
 
     <main>
         <section class="hero">
-            <p class="tag">Learn by Teaching</p>
-            <h1>Welcome, professor 👋</h1>
-            <p>Pick an AP curriculum topic, explain it in your own words, and your AI student will question and grade you until you truly master it.</p>
-            <button class="btn" onclick="openClassModal()">+ Create Classroom</button>
+            <div class="hero-content">
+                <span class="badge-pill">Feynman Learning Technique</span>
+                <h1>Welcome back, Professor 👋</h1>
+                <p>The ultimate test of understanding is teaching. Create a custom classroom or pick an AP subject, explain concepts in your own words, and watch your AI student question and grade you until it truly clicks.</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="openClassModal()">✨ Create Classroom</button>
+                    <button class="btn btn-secondary" onclick="loadDefaultAPClasses()">📚 Load AP Curriculum Pack</button>
+                </div>
+            </div>
         </section>
 
-        <section>
+        <section class="classrooms-section">
             <div class="section-header">
                 <h2>Your Classrooms</h2>
-                <button class="btn btn-secondary load-ap-btn" onclick="loadDefaultAPClasses()">Load AP Curriculum 📚</button>
+                <span class="subtext" id="classroom-count">0 active classes</span>
             </div>
             <div class="classrooms-grid" id="classrooms-grid">
-                <!-- Dynamically populated classrooms -->
+                <!-- Dynamically populated -->
             </div>
         </section>
     </main>
 
-    <footer>AI student runs privately in your browser · AP Curriculum Edition</footer>
+    <footer>
+        <p>AI student powered by LLM (Bring your own API key in settings) · Saved locally on your device</p>
+    </footer>
 
     <!-- Create Classroom Modal -->
-    <dialog id="create-modal">
-        <h2>Create New Classroom</h2>
+    <dialog id="create-modal" class="modal">
+        <div class="modal-header">
+            <h3>Create New Classroom</h3>
+            <button class="close-btn" onclick="document.getElementById('create-modal').close()">×</button>
+        </div>
         <form id="create-form" onsubmit="saveClassroom(event)">
             <div class="form-group">
-                <label>Student Name</label>
-                <input type="text" id="student-name" placeholder="e.g., Alex, Maya, Jordan" required>
+                <label>AI Student Name</label>
+                <input type="text" id="student-name" placeholder="e.g., Maya, Alex, Jordan" required>
             </div>
             <div class="form-group">
-                <label>AP Subject / Topic</label>
-                <select id="ap-topic" required>
-                    <option value="AP Calculus: Derivatives & Rates of Change">AP Calculus: Derivatives & Limits</option>
-                    <option value="AP Physics: Newton's Laws of Motion">AP Physics: Newton's Laws</option>
-                    <option value="AP Chemistry: Stoichiometry & Equilibrium">AP Chemistry: Stoichiometry</option>
-                    <option value="AP Biology: Cellular Respiration & Photosynthesis">AP Biology: Cellular Respiration</option>
-                    <option value="AP US History: The American Revolution">AP US History: The Revolution</option>
-                    <option value="AP Computer Science: Recursion & Object-Oriented Programming">AP Computer Science: Recursion</option>
-                </select>
+                <label>Class Subject / AP Topic</label>
+                <input type="text" id="custom-subject" placeholder="e.g., AP Calculus BC, Quantum Physics, AP US History..." required>
+                <small class="form-hint">Type any subject! Our engine will automatically pull the official AP curriculum guidelines for your AI student.</small>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('create-modal').close()">Cancel</button>
-                <button type="submit" class="btn">Create Classroom</button>
+                <button type="submit" class="btn btn-primary">Open Classroom</button>
             </div>
         </form>
+    </dialog>
+
+    <!-- Settings Modal -->
+    <dialog id="settings-modal" class="modal">
+        <div class="modal-header">
+            <h3>AI Settings & API Key</h3>
+            <button class="close-btn" onclick="document.getElementById('settings-modal').close()">×</button>
+        </div>
+        <div class="form-group">
+            <label>API Provider</label>
+            <select id="api-provider" onchange="toggleApiFields()">
+                <option value="groq">Groq (Recommended - Fast & Free tier)</option>
+                <option value="openai">OpenAI (GPT-4o / GPT-3.5)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label id="api-key-label">Groq API Key</label>
+            <input type="password" id="api-key-input" placeholder="gsk_...">
+            <small class="form-hint">Your key is stored securely in your browser's local storage and never sent anywhere else.</small>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        </div>
     </dialog>
 
     <!-- Teaching Session Modal -->
@@ -69,20 +105,20 @@
             <div class="session-student-info">
                 <div class="avatar" id="session-avatar">M</div>
                 <div>
-                    <p class="session-subject-tag" id="session-subject">TOPIC</p>
                     <h3 id="session-title">Teach Student</h3>
+                    <p class="session-subject-tag" id="session-subject">TOPIC</p>
                 </div>
             </div>
-            <button class="btn btn-secondary" onclick="closeSession()">Exit</button>
+            <button class="btn btn-secondary" onclick="closeSession()">Exit Classroom</button>
         </div>
         
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
-                <!-- Chat history goes here -->
+                <!-- Chat history -->
             </div>
             <form class="chat-input-area" onsubmit="sendExplanation(event)">
                 <input type="text" id="user-input" placeholder="Explain the concept in your own words..." autocomplete="off" required>
-                <button type="submit" class="btn">Teach</button>
+                <button type="submit" class="btn btn-primary">Teach 🎓</button>
             </form>
         </div>
     </dialog>
