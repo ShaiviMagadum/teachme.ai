@@ -1,19 +1,47 @@
-// State management with LocalStorage sync
+// State & LocalStorage
 let classrooms = JSON.parse(localStorage.getItem('teachme_classes')) || [
-    { id: 1, name: "Maya", subject: "AP Calculus: Derivatives & Rates of Change", xp: 50 },
-    { id: 2, name: "Leo", subject: "AP Physics: Newton's Laws of Motion", xp: 20 }
+    { id: 1, name: "Maya", subject: "AP Calculus BC: Series & Convergence", xp: 50, isAP: true },
+    { id: 2, name: "Leo", subject: "AP Physics C: Electromagnetic Induction", xp: 35, isAP: true }
 ];
 let currentClass = null;
-let totalXP = parseInt(localStorage.getItem('teachme_xp')) || 70;
+let totalXP = parseInt(localStorage.getItem('teachme_xp')) || 85;
 let chatHistory = [];
+
+// API Settings configuration
+let apiConfig = JSON.parse(localStorage.getItem('teachme_api_config')) || {
+    provider: 'groq',
+    apiKey: ''
+};
+
+// Official AP Curriculum Knowledge Bases mapped automatically by keywords
+const apCurriculumMap = {
+    calculus: "Official AP Calculus Curriculum: Focus on limits, derivatives, integrals, Riemann sums, Fundamental Theorem of Calculus, Taylor/Maclaurin series, and rate of change applications.",
+    physics: "Official AP Physics Curriculum: Focus on Newton's laws, kinematics, energy conservation, momentum, rotational motion, electromagnetism, and Maxwell's equations.",
+    chemistry: "Official AP Chemistry Curriculum: Focus on atomic structure, intermolecular forces, chemical stoichiometry, thermodynamics, chemical equilibrium, kinetics, and acid-base titrations.",
+    biology: "Official AP Biology Curriculum: Focus on cellular respiration, photosynthesis, gene expression, heredity, evolution, molecular genetics, and ecological systems.",
+    history: "Official AP US History (APUSH) Curriculum: Focus on colonization, American Revolution, Constitution, Civil War, Industrial Revolution, New Deal, and Cold War diplomacy.",
+    computer: "Official AP Computer Science Curriculum: Focus on Java syntax, object-oriented programming, arrays, 2D arrays, recursion, sorting/searching algorithms, and inheritance."
+};
+
+function getAPPromptContext(subject) {
+    const lower = subject.toLowerCase();
+    for (const [key, prompt] of Object.entries(apCurriculumMap)) {
+        if (lower.includes(key)) {
+            return `[AP CURRICULUM GUIDELINES]: ${prompt}`;
+        }
+    }
+    return `[CURRICULUM GUIDELINES]: High school / College level introductory course in ${subject}.`;
+}
 
 function updateUI() {
     document.getElementById('xp-display').innerText = totalXP;
     const grid = document.getElementById('classrooms-grid');
     grid.innerHTML = '';
 
+    document.getElementById('classroom-count').innerText = `${classrooms.length} active classes`;
+
     if (classrooms.length === 0) {
-        grid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1/-1;">No classrooms yet. Click "Load AP Curriculum" or create one above!</p>`;
+        grid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1/-1;">No classrooms yet. Click "Create Classroom" or load the AP Curriculum pack!</p>`;
         return;
     }
 
@@ -22,14 +50,17 @@ function updateUI() {
         card.className = 'classroom-card';
         card.onclick = () => openSession(c.id);
         card.innerHTML = `
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <div class="card-top">
                 <div class="avatar">${c.name[0]}</div>
-                <div>
-                    <h3 style="font-size: 1rem;">Teach ${c.name}</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">${c.subject}</p>
+                <div class="classroom-info">
+                    <h3>Teach ${c.name}</h3>
+                    <p>${c.subject}</p>
                 </div>
             </div>
-            <div style="font-size: 0.8rem; color: var(--accent); margin-top: auto;">⚡ ${c.xp} XP Earned</div>
+            <div class="card-footer">
+                <span class="ap-tag">AP Standard</span>
+                <span class="xp-tag">⚡ +${c.xp} XP</span>
+            </div>
         `;
         grid.appendChild(card);
     });
@@ -42,12 +73,40 @@ function openClassModal() {
     document.getElementById('create-modal').showModal();
 }
 
+function openSettingsModal() {
+    document.getElementById('api-provider').value = apiConfig.provider;
+    document.getElementById('api-key-input').value = apiConfig.apiKey;
+    toggleApiFields();
+    document.getElementById('settings-modal').showModal();
+}
+
+function toggleApiFields() {
+    const provider = document.getElementById('api-provider').value;
+    const label = document.getElementById('api-key-label');
+    const input = document.getElementById('api-key-input');
+    if (provider === 'groq') {
+        label.innerText = "Groq API Key (gsk_...)";
+        input.placeholder = "gsk_... (Get free at console.groq.com)";
+    } else {
+        label.innerText = "OpenAI API Key (sk-...)";
+        input.placeholder = "sk-... (Get from platform.openai.com)";
+    }
+}
+
+function saveSettings() {
+    apiConfig.provider = document.getElementById('api-provider').value;
+    apiConfig.apiKey = document.getElementById('api-key-input').value.trim();
+    localStorage.setItem('teachme_api_config', JSON.stringify(apiConfig));
+    document.getElementById('settings-modal').close();
+    alert("API settings saved successfully!");
+}
+
 function saveClassroom(e) {
     e.preventDefault();
-    const name = document.getElementById('student-name').value;
-    const subject = document.getElementById('ap-topic').value;
+    const name = document.getElementById('student-name').value.trim();
+    const subject = document.getElementById('custom-subject').value.trim();
     
-    classrooms.push({ id: Date.now(), name, subject, xp: 0 });
+    classrooms.push({ id: Date.now(), name, subject, xp: 0, isAP: true });
     document.getElementById('create-form').reset();
     document.getElementById('create-modal').close();
     updateUI();
@@ -55,10 +114,10 @@ function saveClassroom(e) {
 
 function loadDefaultAPClasses() {
     classrooms = [
-        { id: 101, name: "Maya", subject: "AP Calculus: Derivatives & Rates of Change", xp: 40 },
-        { id: 102, name: "Liam", subject: "AP Physics: Newton's Laws of Motion", xp: 20 },
+        { id: 101, name: "Maya", subject: "AP Calculus BC: Derivatives & Limits", xp: 40 },
+        { id: 102, name: "Liam", subject: "AP Physics 1: Newton's Laws of Motion", xp: 25 },
         { id: 103, name: "Chloe", subject: "AP Chemistry: Stoichiometry & Equilibrium", xp: 15 },
-        { id: 104, name: "Sam", subject: "AP Computer Science: Recursion & Object-Oriented Programming", xp: 60 }
+        { id: 104, name: "Sam", subject: "AP Computer Science A: Recursion & OOP", xp: 60 }
     ];
     updateUI();
 }
@@ -72,7 +131,7 @@ function openSession(id) {
     document.getElementById('session-subject').innerText = currentClass.subject.toUpperCase();
     
     chatHistory = [
-        { role: 'ai', text: `Hi Professor! I'm ready to learn about ${currentClass.subject}. How would you explain this topic to me simply?` }
+        { role: 'ai', text: `Hi Professor! I'm ${currentClass.name}, and I'm ready to learn about ${currentClass.subject}. How would you explain the core concepts of this topic to me simply?` }
     ];
     renderChat();
     document.getElementById('session-modal').showModal();
@@ -95,7 +154,7 @@ function renderChat() {
     container.scrollTop = container.scrollHeight;
 }
 
-function sendExplanation(e) {
+async function sendExplanation(e) {
     e.preventDefault();
     const inputEl = document.getElementById('user-input');
     const text = inputEl.value.trim();
@@ -105,22 +164,87 @@ function sendExplanation(e) {
     inputEl.value = '';
     renderChat();
 
-    // AI Student Questioning & Grading Logic simulation
-    setTimeout(() => {
-        let aiReply = "";
+    // Show typing placeholder
+    const loadingId = chatHistory.length;
+    chatHistory.push({ role: 'ai', text: `${currentClass.name} is thinking and reviewing your explanation...` });
+    renderChat();
+
+    try {
+        const reply = await callRealLLM(currentClass.subject, currentClass.name, chatHistory.slice(0, -1));
+        chatHistory[loadingId] = { role: 'ai', text: reply };
         
-        if (chatHistory.length < 5) {
-            aiReply = `Wait, can you clarify that part about ${currentClass.subject.split(':')[1] || 'the core concept'}? Why does that happen in real terms? Give me an example!`;
-        } else {
-            aiReply = `That actually makes a lot more sense now! I think I get it. You've earned +25 XP for clear teaching! 🎉`;
-            currentClass.xp += 25;
-            totalXP += 25;
+        // Reward XP if explanation is thorough
+        if (reply.toLowerCase().includes("master") || reply.toLowerCase().includes("makes sense") || chatHistory.length >= 6) {
+            currentClass.xp += 20;
+            totalXP += 20;
             updateUI();
         }
-        chatHistory.push({ role: 'ai', text: aiReply });
-        renderChat();
-    }, 1000);
+    } catch (err) {
+        chatHistory[loadingId] = { 
+            role: 'ai', 
+            text: `⚠️ API Error: ${err.message}. Please check your API key in settings (⚙️) or ensure your Groq/OpenAI key is valid.` 
+        };
+    }
+    renderChat();
 }
 
-// Initialize on load
+// Real LLM API Connector (Groq / OpenAI)
+async function callRealLLM(subject, studentName, history) {
+    const apiKey = apiConfig.apiKey;
+    if (!apiKey) {
+        throw new Error("No API key configured. Click the gear icon (⚙️) at the top right to add your free Groq API key.");
+    }
+
+    const curriculumContext = getAPPromptContext(subject);
+    const systemPrompt = `You are ${studentName}, an eager high school or college student trying to learn ${subject}.
+${curriculumContext}
+Your teacher (the user) is explaining the topic to you using the Feynman technique. 
+Rules:
+1. Act genuinely curious, ask insightful follow-up questions, or point out minor confusion in their logic to make them explain deeper.
+2. Do not immediately say "good job" unless their explanation is exceptionally thorough and accurate.
+3. Keep your response conversational, concise (2-4 sentences), and focused purely on understanding the material.`;
+
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...history.map(m => ({
+            role: m.role === 'ai' ? 'assistant' : 'user',
+            content: m.text
+        }))
+    ];
+
+    let endpoint = "";
+    let modelName = "";
+
+    if (apiConfig.provider === 'groq') {
+        endpoint = "https://api.groq.com/openai/v1/chat/completions";
+        modelName = "llama-3.3-70b-versatile";
+    } else {
+        endpoint = "https://api.openai.com/v1/chat/completions";
+        modelName = "gpt-4o-mini";
+    }
+
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: modelName,
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 300
+        })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
+
+// Initialize
 updateUI();
