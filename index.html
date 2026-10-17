@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>teachme.ai - Learn by Teaching</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <a href="#"><span>✦</span> teachme<span>.ai</span></a>
+        <div class="stats">
+            <div class="stat-badge"><span>⚡</span><b id="xp-display">0</b><span>XP</span></div>
+            <div class="stat-badge"><span>🔥</span><b id="streak-display">1</b><span>day streak</span></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <p class="tag">Learn by Teaching</p>
+            <h1>Welcome, professor 👋</h1>
+            <p>Pick an AP curriculum topic, explain it in your own words, and your AI student will question and grade you until you truly master it.</p>
+            <button class="btn" onclick="openClassModal()">+ Create Classroom</button>
+        </section>
+
+        <section>
+            <div class="section-header">
+                <h2>Your Classrooms</h2>
+                <button class="btn btn-secondary load-ap-btn" onclick="loadDefaultAPClasses()">Load AP Curriculum 📚</button>
+            </div>
+            <div class="classrooms-grid" id="classrooms-grid">
+                <!-- Dynamically populated classrooms -->
+            </div>
+        </section>
+    </main>
+
+    <footer>AI student runs privately in your browser · AP Curriculum Edition</footer>
+
+    <!-- Create Classroom Modal -->
+    <dialog id="create-modal">
+        <h2>Create New Classroom</h2>
+        <form id="create-form" onsubmit="saveClassroom(event)">
+            <div class="form-group">
+                <label>Student Name</label>
+                <input type="text" id="student-name" placeholder="e.g., Alex, Maya, Jordan" required>
+            </div>
+            <div class="form-group">
+                <label>AP Subject / Topic</label>
+                <select id="ap-topic" required>
+                    <option value="AP Calculus: Derivatives & Rates of Change">AP Calculus: Derivatives & Limits</option>
+                    <option value="AP Physics: Newton's Laws of Motion">AP Physics: Newton's Laws</option>
+                    <option value="AP Chemistry: Stoichiometry & Equilibrium">AP Chemistry: Stoichiometry</option>
+                    <option value="AP Biology: Cellular Respiration & Photosynthesis">AP Biology: Cellular Respiration</option>
+                    <option value="AP US History: The American Revolution">AP US History: The Revolution</option>
+                    <option value="AP Computer Science: Recursion & Object-Oriented Programming">AP Computer Science: Recursion</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('create-modal').close()">Cancel</button>
+                <button type="submit" class="btn">Create Classroom</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Teaching Session Modal -->
+    <dialog id="session-modal" class="session-dialog">
+        <div class="session-header-bar">
+            <div class="session-student-info">
+                <div class="avatar" id="session-avatar">M</div>
+                <div>
+                    <p class="session-subject-tag" id="session-subject">TOPIC</p>
+                    <h3 id="session-title">Teach Student</h3>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="closeSession()">Exit</button>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <!-- Chat history goes here -->
+            </div>
+            <form class="chat-input-area" onsubmit="sendExplanation(event)">
+                <input type="text" id="user-input" placeholder="Explain the concept in your own words..." autocomplete="off" required>
+                <button type="submit" class="btn">Teach</button>
+            </form>
+        </div>
+    </dialog>
+
+    <script src="script.js"></script>
+</body>
+</html>
